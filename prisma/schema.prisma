@@ -1,0 +1,186 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum IncidentStatus {
+  FIRING
+  ACKNOWLEDGED
+  RESOLVED
+}
+
+enum Severity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+enum AlertAction {
+  trigger
+  resolve
+}
+
+enum EscalationState {
+  ACTIVE
+  EXHAUSTED
+}
+
+enum EscalationAttemptState {
+  PENDING
+  COMPLETED
+  SKIPPED
+}
+
+enum NotificationState {
+  PENDING
+  SENDING
+  SENT
+  FAILED
+}
+
+model User {
+  id                 String           @id @default(cuid())
+  name               String
+  notificationTarget String
+  escalationSteps    EscalationStep[]
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+}
+
+model EscalationPolicy {
+  id        String           @id @default(cuid())
+  name      String           @unique
+  services  Service[]
+  steps     EscalationStep[]
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+}
+
+model EscalationStep {
+  id           String           @id @default(cuid())
+  policyId     String
+  userId       String
+  stepIndex    Int
+  delaySeconds Int
+  policy       EscalationPolicy @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  user         User             @relation(fields: [userId], references: [id], onDelete: Restrict)
+  createdAt    DateTime         @default(now())
+
+  @@unique([policyId, stepIndex])
+  @@index([userId])
+}
+
+model Service {
+  id                 String            @id @default(cuid())
+  name               String            @unique
+  escalationPolicyId String?
+  escalationPolicy   EscalationPolicy? @relation(fields: [escalationPolicyId], references: [id], onDelete: Restrict)
+  apiKeys            ApiKey[]
+  alerts             Alert[]
+  incidents          Incident[]
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+}
+
+model ApiKey {
+  id        String    @id @default(cuid())
+  name      String
+  keyHash   String    @unique
+  serviceId String
+  service   Service   @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  revokedAt DateTime?
+
+  @@index([serviceId])
+}
+
+model Alert {
+  id              String      @id @default(cuid())
+  serviceId       String
+  incidentId      String?
+  environment     String
+  dedupKey        String
+  action          AlertAction
+  severity        Severity
+  message         String
+  receivedAt      DateTime    @default(now())
+  clientTimestamp DateTime?
+  payload         Json
+  service         Service     @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  incident        Incident?   @relation(fields: [incidentId], references: [id], onDelete: SetNull)
+
+  @@index([serviceId, environment, receivedAt])
+  @@index([incidentId, receivedAt])
+  @@index([serviceId, dedupKey, receivedAt])
+}
+
+model Incident {
+  id                 String              @id @default(cuid())
+  serviceId          String
+  environment        String
+  dedupKey           String
+  status             IncidentStatus      @default(FIRING)
+  severity           Severity
+  alertCount         Int                 @default(1)
+  currentStep        Int                 @default(0)
+  nextActionAt       DateTime?
+  escalationState    EscalationState     @default(ACTIVE)
+  policySnapshot     Json
+  acknowledgedAt     DateTime?
+  resolvedAt         DateTime?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  service            Service             @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  alerts             Alert[]
+  events             IncidentEvent[]
+  escalationAttempts EscalationAttempt[]
+
+  @@index([status, createdAt])
+  @@index([nextActionAt])
+  @@index([serviceId, environment])
+}
+
+model IncidentEvent {
+  id         String   @id @default(cuid())
+  incidentId String
+  type       String
+  source     String
+  metadata   Json
+  createdAt  DateTime @default(now())
+  incident   Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  @@index([incidentId, createdAt])
+}
+
+model EscalationAttempt {
+  id                  String                 @id @default(cuid())
+  incidentId          String
+  stepIndex           Int
+  state               EscalationAttemptState @default(PENDING)
+  createdAt           DateTime               @default(now())
+  completedAt         DateTime?
+  incident            Incident               @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  notificationAttempt NotificationAttempt?
+
+  @@unique([incidentId, stepIndex])
+  @@index([state, createdAt])
+}
+
+model NotificationAttempt {
+  id                  String            @id @default(cuid())
+  escalationAttemptId String            @unique
+  state               NotificationState @default(PENDING)
+  retryCount          Int               @default(0)
+  nextAttemptAt       DateTime?
+  error               String?
+  sentAt              DateTime?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  escalationAttempt   EscalationAttempt @relation(fields: [escalationAttemptId], references: [id], onDelete: Cascade)
+
+  @@index([state, nextAttemptAt])
+}
