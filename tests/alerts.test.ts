@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import request from "supertest";
 import app from "../src/app.js";
 import { prisma } from "../src/lib/prisma.js";
@@ -273,7 +273,202 @@ describe("Alert ingestion", () => {
     expect(activeIncidents[0].id).toBe(first.body.incidentId);
   });
 
- // TEST 6:
+  
+  // TEST 6:
+  // Simulate an active-incident unique constraint conflict.
+  // The route should recover by attaching the alert to the existing incident.
+  it("recovers from an active-incident unique conflict", async () => {
+    const dedupKey = "recovery-test";
+
+    // First, create an active incident normally.
+    const first = await submitAlert({
+      dedupKey,
+      action: "trigger",
+    });
+
+    expect(first.status).toBe(202);
+    expect(first.body.outcome).toBe("created");
+
+    // Create the same kind of Prisma error that PostgreSQL's
+    // unique index violation produces.
+    const conflictingError =
+      new Prisma.PrismaClientKnownRequestError(
+        "Unique constraint failed on the constraint: `Incident_one_unresolved_per_dedup_key`",
+        {
+          code: "P2002",
+          clientVersion: "7.10.0",
+        },
+      );
+
+    // Make the next transaction fail once with that error.
+    // The recovery transaction should then run normally.
+    const transactionSpy = vi
+      .spyOn(prisma, "$transaction")
+      .mockRejectedValueOnce(conflictingError);
+
+    let recovered: Awaited<ReturnType<typeof submitAlert>>;
+
+    try {
+      recovered = await submitAlert({
+        dedupKey,
+        action: "trigger",
+        message: "Alert after simulated unique conflict",
+      });
+    } finally {
+      // Restore Prisma's original transaction method.
+      transactionSpy.mockRestore();
+    }
+
+    // The route should recover instead of returning HTTP 500.
+    expect(recovered.status).toBe(202);
+    expect(recovered.body.outcome).toBe("attached");
+
+    // The alert must attach to the original incident.
+    expect(recovered.body.incidentId).toBe(first.body.incidentId);
+    expect(recovered.body.alertId).not.toBe(first.body.alertId);
+    expect(recovered.body.alertCount).toBe(2);
+
+    // Confirm that the recovered alert was actually saved.
+    const savedAlert = await prisma.alert.findUnique({
+      where: { id: recovered.body.alertId },
+    });
+
+    expect(savedAlert).not.toBeNull();
+    expect(savedAlert?.incidentId).toBe(first.body.incidentId);
+
+    // Confirm the database reflects the recovered operation.
+    const incident = await prisma.incident.findUnique({
+      where: { id: first.body.incidentId },
+    });
+
+    expect(incident?.alertCount).toBe(2);
+
+    const activeIncidents = await prisma.incident.findMany({
+      where: {
+        serviceId,
+        environment: "test",
+        dedupKey,
+        status: { in: ["FIRING", "ACKNOWLEDGED"] },
+      },
+    });
+
+    expect(activeIncidents).toHaveLength(1);
+  });
+
+
+  
+  // TEST 7:
+  // Send a trigger and resolve concurrently for the same incident.
+  // Verify that both requests are processed consistently and that
+  // a trigger never attaches to an incident that was already resolved.
+  it("handles concurrent trigger and resolve requests consistently", async () => {
+    const dedupKey = "trigger-resolve-race-test";
+
+    // Start with an existing active incident.
+    const first = await submitAlert({
+      dedupKey,
+      action: "trigger",
+    });
+
+    expect(first.status).toBe(202);
+    expect(first.body.outcome).toBe("created");
+
+    // Send both requests without waiting for either to finish.
+    const [triggerResponse, resolveResponse] = await Promise.all([
+      submitAlert({
+        dedupKey,
+        action: "trigger",
+        message: "Concurrent trigger",
+      }),
+      submitAlert({
+        dedupKey,
+        action: "resolve",
+        message: "Concurrent resolve",
+      }),
+    ]);
+
+    expect(triggerResponse.status).toBe(202);
+    expect(resolveResponse.status).toBe(202);
+
+    // The resolve should close the original incident regardless
+    // of which request acquired the advisory lock first.
+    expect(resolveResponse.body.outcome).toBe("resolved");
+    expect(resolveResponse.body.incidentId).toBe(first.body.incidentId);
+
+    const originalIncident = await prisma.incident.findUnique({
+      where: { id: first.body.incidentId },
+    });
+
+    expect(originalIncident?.status).toBe("RESOLVED");
+
+    // There are two valid outcomes for the concurrent trigger:
+    // 1. It runs first and attaches to the original incident.
+    // 2. Resolve runs first and the trigger creates a new incident.
+    if (triggerResponse.body.outcome === "attached") {
+      expect(triggerResponse.body.incidentId).toBe(first.body.incidentId);
+    } else {
+      expect(triggerResponse.body.outcome).toBe("created");
+      expect(triggerResponse.body.incidentId).not.toBe(
+        first.body.incidentId,
+      );
+
+      const newIncident = await prisma.incident.findUnique({
+        where: { id: triggerResponse.body.incidentId },
+      });
+
+      expect(newIncident?.status).toBe("FIRING");
+      expect(newIncident?.alertCount).toBe(1);
+    }
+
+    // All three requests must be persisted as separate alerts.
+    const alerts = await prisma.alert.findMany({
+      where: {
+        serviceId,
+        environment: "test",
+        dedupKey,
+      },
+    });
+
+    expect(alerts).toHaveLength(3);
+
+    // The resolve must always reference the original incident.
+    const resolveAlert = alerts.find(
+      (alert) => alert.action === "resolve",
+    );
+
+    expect(resolveAlert?.incidentId).toBe(first.body.incidentId);
+
+    // If the trigger created a new incident, it must reference that
+    // new incident rather than the now-resolved original.
+    const concurrentTriggerAlert = alerts.find(
+      (alert) =>
+        alert.action === "trigger" &&
+        alert.id !== first.body.alertId,
+    );
+
+    expect(concurrentTriggerAlert).toBeDefined();
+    expect(concurrentTriggerAlert?.incidentId).toBe(
+      triggerResponse.body.incidentId,
+    );
+
+    // There must never be more than one active incident for this key.
+    const activeIncidents = await prisma.incident.findMany({
+      where: {
+        serviceId,
+        environment: "test",
+        dedupKey,
+        status: { in: ["FIRING", "ACKNOWLEDGED"] },
+      },
+    });
+
+    expect(activeIncidents).toHaveLength(
+      triggerResponse.body.outcome === "created" ? 1 : 0,
+    );
+  });
+
+
+
+ // TEST 8:
 // Send 500 trigger requests concurrently with the same identity.
 // Verify that exactly one incident is created, the other 499 alerts
 // attach to it, every alert is persisted, and alertCount reaches 500.

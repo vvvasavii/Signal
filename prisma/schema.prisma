@@ -43,12 +43,14 @@ enum NotificationState {
 }
 
 model User {
-  id                 String           @id @default(cuid())
-  name               String
-  notificationTarget String
-  escalationSteps    EscalationStep[]
-  createdAt          DateTime         @default(now())
-  updatedAt          DateTime         @updatedAt
+  id                    String           @id @default(cuid())
+  name                  String
+  notificationTarget    String
+  escalationSteps       EscalationStep[]
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+  incidents             Incident[]
+  acknowledgedIncidents Incident[]       @relation("IncidentAcknowledgedBy")
 }
 
 model EscalationPolicy {
@@ -131,6 +133,8 @@ model Incident {
   escalationState    EscalationState     @default(ACTIVE)
   policySnapshot     Json
   acknowledgedAt     DateTime?
+  acknowledgedById   String?
+  acknowledgedBy     User?               @relation("IncidentAcknowledgedBy", fields: [acknowledgedById], references: [id], onDelete: SetNull)
   resolvedAt         DateTime?
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
@@ -138,6 +142,8 @@ model Incident {
   alerts             Alert[]
   events             IncidentEvent[]
   escalationAttempts EscalationAttempt[]
+  user               User?               @relation(fields: [userId], references: [id])
+  userId             String?
 
   @@index([status, createdAt])
   @@index([nextActionAt])
