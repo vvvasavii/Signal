@@ -165,9 +165,11 @@ export const IncidentScalarFieldEnum = {
   escalationState: 'escalationState',
   policySnapshot: 'policySnapshot',
   acknowledgedAt: 'acknowledgedAt',
+  acknowledgedById: 'acknowledgedById',
   resolvedAt: 'resolvedAt',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  userId: 'userId'
 } as const
 
 export type IncidentScalarFieldEnum = (typeof IncidentScalarFieldEnum)[keyof typeof IncidentScalarFieldEnum]

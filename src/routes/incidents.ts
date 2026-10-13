@@ -25,8 +25,7 @@ router.post("/:id/acknowledge", async (req, res) => {
 
   try {
     const outcome = await prisma.$transaction(async (tx) => {
-      // Lock this incident row so acknowledgement and escalation
-      // can coordinate their decisions.
+      // Lock the incident so ACK and escalation can coordinate.
       const rows = await tx.$queryRaw<
         { id: string; status: string }[]
       >`
@@ -36,13 +35,11 @@ router.post("/:id/acknowledge", async (req, res) => {
         FOR UPDATE
       `;
 
-      const incident = rows[0];
-
-      if (!incident) {
+      if (!rows[0]) {
         return { outcome: "not_found" as const };
       }
 
-      // Check the status again after obtaining the lock.
+      // Read the current status while holding the row lock.
       const current = await tx.incident.findUniqueOrThrow({
         where: { id: incidentId },
       });
@@ -51,8 +48,19 @@ router.post("/:id/acknowledge", async (req, res) => {
         return { outcome: "already_resolved" as const };
       }
 
+      // Repeated ACKs succeed without generating duplicate events.
       if (current.status === "ACKNOWLEDGED") {
         return { outcome: "already_acknowledged" as const };
+      }
+
+      // A valid signature does not guarantee that the user still exists.
+      const user = await tx.user.findUnique({
+        where: { id: claims.userId },
+        select: { id: true },
+      });
+
+      if (!user) {
+        return { outcome: "invalid_user" as const };
       }
 
       const acknowledgedAt = new Date();
@@ -62,7 +70,7 @@ router.post("/:id/acknowledge", async (req, res) => {
         data: {
           status: "ACKNOWLEDGED",
           acknowledgedAt,
-          acknowledgedById: claims.userId,
+          acknowledgedById: user.id,
           nextActionAt: null,
         },
       });
@@ -73,7 +81,7 @@ router.post("/:id/acknowledge", async (req, res) => {
           type: "INCIDENT_ACKNOWLEDGED",
           source: "signed_ack_link",
           metadata: {
-            userId: claims.userId,
+            userId: user.id,
             acknowledgedAt: acknowledgedAt.toISOString(),
           },
         },
@@ -83,12 +91,20 @@ router.post("/:id/acknowledge", async (req, res) => {
     });
 
     if (outcome.outcome === "not_found") {
-      return res.status(404).json({ error: "Incident not found" });
+      return res.status(404).json({
+        error: "Incident not found",
+      });
     }
 
     if (outcome.outcome === "already_resolved") {
       return res.status(409).json({
         error: "Resolved incidents cannot be acknowledged",
+      });
+    }
+
+    if (outcome.outcome === "invalid_user") {
+      return res.status(401).json({
+        error: "Acknowledgement token refers to an invalid user",
       });
     }
 

@@ -183,6 +183,8 @@ export type UserWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
   escalationSteps?: Prisma.EscalationStepListRelationFilter
+  incidents?: Prisma.IncidentListRelationFilter
+  acknowledgedIncidents?: Prisma.IncidentListRelationFilter
 }
 
 export type UserOrderByWithRelationInput = {
@@ -192,6 +194,8 @@ export type UserOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   escalationSteps?: Prisma.EscalationStepOrderByRelationAggregateInput
+  incidents?: Prisma.IncidentOrderByRelationAggregateInput
+  acknowledgedIncidents?: Prisma.IncidentOrderByRelationAggregateInput
 }
 
 export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -204,6 +208,8 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
   escalationSteps?: Prisma.EscalationStepListRelationFilter
+  incidents?: Prisma.IncidentListRelationFilter
+  acknowledgedIncidents?: Prisma.IncidentListRelationFilter
 }, "id">
 
 export type UserOrderByWithAggregationInput = {
@@ -235,6 +241,8 @@ export type UserCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   escalationSteps?: Prisma.EscalationStepCreateNestedManyWithoutUserInput
+  incidents?: Prisma.IncidentCreateNestedManyWithoutUserInput
+  acknowledgedIncidents?: Prisma.IncidentCreateNestedManyWithoutAcknowledgedByInput
 }
 
 export type UserUncheckedCreateInput = {
@@ -244,6 +252,8 @@ export type UserUncheckedCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   escalationSteps?: Prisma.EscalationStepUncheckedCreateNestedManyWithoutUserInput
+  incidents?: Prisma.IncidentUncheckedCreateNestedManyWithoutUserInput
+  acknowledgedIncidents?: Prisma.IncidentUncheckedCreateNestedManyWithoutAcknowledgedByInput
 }
 
 export type UserUpdateInput = {
@@ -253,6 +263,8 @@ export type UserUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   escalationSteps?: Prisma.EscalationStepUpdateManyWithoutUserNestedInput
+  incidents?: Prisma.IncidentUpdateManyWithoutUserNestedInput
+  acknowledgedIncidents?: Prisma.IncidentUpdateManyWithoutAcknowledgedByNestedInput
 }
 
 export type UserUncheckedUpdateInput = {
@@ -262,6 +274,8 @@ export type UserUncheckedUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   escalationSteps?: Prisma.EscalationStepUncheckedUpdateManyWithoutUserNestedInput
+  incidents?: Prisma.IncidentUncheckedUpdateManyWithoutUserNestedInput
+  acknowledgedIncidents?: Prisma.IncidentUncheckedUpdateManyWithoutAcknowledgedByNestedInput
 }
 
 export type UserCreateManyInput = {
@@ -317,6 +331,11 @@ export type UserScalarRelationFilter = {
   isNot?: Prisma.UserWhereInput
 }
 
+export type UserNullableScalarRelationFilter = {
+  is?: Prisma.UserWhereInput | null
+  isNot?: Prisma.UserWhereInput | null
+}
+
 export type StringFieldUpdateOperationsInput = {
   set?: string
 }
@@ -339,12 +358,46 @@ export type UserUpdateOneRequiredWithoutEscalationStepsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutEscalationStepsInput, Prisma.UserUpdateWithoutEscalationStepsInput>, Prisma.UserUncheckedUpdateWithoutEscalationStepsInput>
 }
 
+export type UserCreateNestedOneWithoutAcknowledgedIncidentsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutAcknowledgedIncidentsInput, Prisma.UserUncheckedCreateWithoutAcknowledgedIncidentsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutAcknowledgedIncidentsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserCreateNestedOneWithoutIncidentsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutIncidentsInput, Prisma.UserUncheckedCreateWithoutIncidentsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutIncidentsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneWithoutAcknowledgedIncidentsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutAcknowledgedIncidentsInput, Prisma.UserUncheckedCreateWithoutAcknowledgedIncidentsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutAcknowledgedIncidentsInput
+  upsert?: Prisma.UserUpsertWithoutAcknowledgedIncidentsInput
+  disconnect?: Prisma.UserWhereInput | boolean
+  delete?: Prisma.UserWhereInput | boolean
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutAcknowledgedIncidentsInput, Prisma.UserUpdateWithoutAcknowledgedIncidentsInput>, Prisma.UserUncheckedUpdateWithoutAcknowledgedIncidentsInput>
+}
+
+export type UserUpdateOneWithoutIncidentsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutIncidentsInput, Prisma.UserUncheckedCreateWithoutIncidentsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutIncidentsInput
+  upsert?: Prisma.UserUpsertWithoutIncidentsInput
+  disconnect?: Prisma.UserWhereInput | boolean
+  delete?: Prisma.UserWhereInput | boolean
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutIncidentsInput, Prisma.UserUpdateWithoutIncidentsInput>, Prisma.UserUncheckedUpdateWithoutIncidentsInput>
+}
+
 export type UserCreateWithoutEscalationStepsInput = {
   id?: string
   name: string
   notificationTarget: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  incidents?: Prisma.IncidentCreateNestedManyWithoutUserInput
+  acknowledgedIncidents?: Prisma.IncidentCreateNestedManyWithoutAcknowledgedByInput
 }
 
 export type UserUncheckedCreateWithoutEscalationStepsInput = {
@@ -353,6 +406,8 @@ export type UserUncheckedCreateWithoutEscalationStepsInput = {
   notificationTarget: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  incidents?: Prisma.IncidentUncheckedCreateNestedManyWithoutUserInput
+  acknowledgedIncidents?: Prisma.IncidentUncheckedCreateNestedManyWithoutAcknowledgedByInput
 }
 
 export type UserCreateOrConnectWithoutEscalationStepsInput = {
@@ -377,6 +432,8 @@ export type UserUpdateWithoutEscalationStepsInput = {
   notificationTarget?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  incidents?: Prisma.IncidentUpdateManyWithoutUserNestedInput
+  acknowledgedIncidents?: Prisma.IncidentUpdateManyWithoutAcknowledgedByNestedInput
 }
 
 export type UserUncheckedUpdateWithoutEscalationStepsInput = {
@@ -385,6 +442,120 @@ export type UserUncheckedUpdateWithoutEscalationStepsInput = {
   notificationTarget?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  incidents?: Prisma.IncidentUncheckedUpdateManyWithoutUserNestedInput
+  acknowledgedIncidents?: Prisma.IncidentUncheckedUpdateManyWithoutAcknowledgedByNestedInput
+}
+
+export type UserCreateWithoutAcknowledgedIncidentsInput = {
+  id?: string
+  name: string
+  notificationTarget: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  escalationSteps?: Prisma.EscalationStepCreateNestedManyWithoutUserInput
+  incidents?: Prisma.IncidentCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutAcknowledgedIncidentsInput = {
+  id?: string
+  name: string
+  notificationTarget: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  escalationSteps?: Prisma.EscalationStepUncheckedCreateNestedManyWithoutUserInput
+  incidents?: Prisma.IncidentUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutAcknowledgedIncidentsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutAcknowledgedIncidentsInput, Prisma.UserUncheckedCreateWithoutAcknowledgedIncidentsInput>
+}
+
+export type UserCreateWithoutIncidentsInput = {
+  id?: string
+  name: string
+  notificationTarget: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  escalationSteps?: Prisma.EscalationStepCreateNestedManyWithoutUserInput
+  acknowledgedIncidents?: Prisma.IncidentCreateNestedManyWithoutAcknowledgedByInput
+}
+
+export type UserUncheckedCreateWithoutIncidentsInput = {
+  id?: string
+  name: string
+  notificationTarget: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  escalationSteps?: Prisma.EscalationStepUncheckedCreateNestedManyWithoutUserInput
+  acknowledgedIncidents?: Prisma.IncidentUncheckedCreateNestedManyWithoutAcknowledgedByInput
+}
+
+export type UserCreateOrConnectWithoutIncidentsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutIncidentsInput, Prisma.UserUncheckedCreateWithoutIncidentsInput>
+}
+
+export type UserUpsertWithoutAcknowledgedIncidentsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutAcknowledgedIncidentsInput, Prisma.UserUncheckedUpdateWithoutAcknowledgedIncidentsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutAcknowledgedIncidentsInput, Prisma.UserUncheckedCreateWithoutAcknowledgedIncidentsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutAcknowledgedIncidentsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutAcknowledgedIncidentsInput, Prisma.UserUncheckedUpdateWithoutAcknowledgedIncidentsInput>
+}
+
+export type UserUpdateWithoutAcknowledgedIncidentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  notificationTarget?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  escalationSteps?: Prisma.EscalationStepUpdateManyWithoutUserNestedInput
+  incidents?: Prisma.IncidentUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutAcknowledgedIncidentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  notificationTarget?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  escalationSteps?: Prisma.EscalationStepUncheckedUpdateManyWithoutUserNestedInput
+  incidents?: Prisma.IncidentUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserUpsertWithoutIncidentsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutIncidentsInput, Prisma.UserUncheckedUpdateWithoutIncidentsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutIncidentsInput, Prisma.UserUncheckedCreateWithoutIncidentsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutIncidentsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutIncidentsInput, Prisma.UserUncheckedUpdateWithoutIncidentsInput>
+}
+
+export type UserUpdateWithoutIncidentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  notificationTarget?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  escalationSteps?: Prisma.EscalationStepUpdateManyWithoutUserNestedInput
+  acknowledgedIncidents?: Prisma.IncidentUpdateManyWithoutAcknowledgedByNestedInput
+}
+
+export type UserUncheckedUpdateWithoutIncidentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  notificationTarget?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  escalationSteps?: Prisma.EscalationStepUncheckedUpdateManyWithoutUserNestedInput
+  acknowledgedIncidents?: Prisma.IncidentUncheckedUpdateManyWithoutAcknowledgedByNestedInput
 }
 
 
@@ -394,10 +565,14 @@ export type UserUncheckedUpdateWithoutEscalationStepsInput = {
 
 export type UserCountOutputType = {
   escalationSteps: number
+  incidents: number
+  acknowledgedIncidents: number
 }
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   escalationSteps?: boolean | UserCountOutputTypeCountEscalationStepsArgs
+  incidents?: boolean | UserCountOutputTypeCountIncidentsArgs
+  acknowledgedIncidents?: boolean | UserCountOutputTypeCountAcknowledgedIncidentsArgs
 }
 
 /**
@@ -417,6 +592,20 @@ export type UserCountOutputTypeCountEscalationStepsArgs<ExtArgs extends runtime.
   where?: Prisma.EscalationStepWhereInput
 }
 
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountIncidentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.IncidentWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountAcknowledgedIncidentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.IncidentWhereInput
+}
+
 
 export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -425,6 +614,8 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   createdAt?: boolean
   updatedAt?: boolean
   escalationSteps?: boolean | Prisma.User$escalationStepsArgs<ExtArgs>
+  incidents?: boolean | Prisma.User$incidentsArgs<ExtArgs>
+  acknowledgedIncidents?: boolean | Prisma.User$acknowledgedIncidentsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
@@ -455,6 +646,8 @@ export type UserSelectScalar = {
 export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "notificationTarget" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   escalationSteps?: boolean | Prisma.User$escalationStepsArgs<ExtArgs>
+  incidents?: boolean | Prisma.User$incidentsArgs<ExtArgs>
+  acknowledgedIncidents?: boolean | Prisma.User$acknowledgedIncidentsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type UserIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -464,6 +657,8 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   name: "User"
   objects: {
     escalationSteps: Prisma.$EscalationStepPayload<ExtArgs>[]
+    incidents: Prisma.$IncidentPayload<ExtArgs>[]
+    acknowledgedIncidents: Prisma.$IncidentPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -866,6 +1061,8 @@ readonly fields: UserFieldRefs;
 export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   escalationSteps<T extends Prisma.User$escalationStepsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$escalationStepsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$EscalationStepPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  incidents<T extends Prisma.User$incidentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$incidentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$IncidentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  acknowledgedIncidents<T extends Prisma.User$acknowledgedIncidentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$acknowledgedIncidentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$IncidentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1314,6 +1511,54 @@ export type User$escalationStepsArgs<ExtArgs extends runtime.Types.Extensions.In
   take?: number
   skip?: number
   distinct?: Prisma.EscalationStepScalarFieldEnum | Prisma.EscalationStepScalarFieldEnum[]
+}
+
+/**
+ * User.incidents
+ */
+export type User$incidentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Incident
+   */
+  select?: Prisma.IncidentSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Incident
+   */
+  omit?: Prisma.IncidentOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.IncidentInclude<ExtArgs> | null
+  where?: Prisma.IncidentWhereInput
+  orderBy?: Prisma.IncidentOrderByWithRelationInput | Prisma.IncidentOrderByWithRelationInput[]
+  cursor?: Prisma.IncidentWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.IncidentScalarFieldEnum | Prisma.IncidentScalarFieldEnum[]
+}
+
+/**
+ * User.acknowledgedIncidents
+ */
+export type User$acknowledgedIncidentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Incident
+   */
+  select?: Prisma.IncidentSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Incident
+   */
+  omit?: Prisma.IncidentOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.IncidentInclude<ExtArgs> | null
+  where?: Prisma.IncidentWhereInput
+  orderBy?: Prisma.IncidentOrderByWithRelationInput | Prisma.IncidentOrderByWithRelationInput[]
+  cursor?: Prisma.IncidentWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.IncidentScalarFieldEnum | Prisma.IncidentScalarFieldEnum[]
 }
 
 /**
