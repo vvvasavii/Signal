@@ -1,11 +1,4 @@
-
-import {
-  afterAll,
-  beforeAll,
-  describe,
-  expect,
-  it,
-} from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import request from "supertest";
 import { createHmac } from "node:crypto";
 
@@ -32,9 +25,9 @@ function expiredAckToken(incidentId: string, userId: string) {
     exp: Math.floor(Date.now() / 1000) - 60,
   };
 
-  const encodedPayload = Buffer
-    .from(JSON.stringify(payload))
-    .toString("base64url");
+  const encodedPayload = Buffer.from(JSON.stringify(payload)).toString(
+    "base64url",
+  );
 
   const signature = createHmac("sha256", ACK_SECRET)
     .update(encodedPayload)
@@ -57,9 +50,7 @@ async function createIncident(
       status,
       policySnapshot: {},
       nextActionAt: new Date(Date.now() + 60_000),
-      ...(status === "RESOLVED"
-        ? { resolvedAt: new Date() }
-        : {}),
+      ...(status === "RESOLVED" ? { resolvedAt: new Date() } : {}),
       ...(status === "ACKNOWLEDGED"
         ? {
             acknowledgedAt: new Date(),
@@ -71,15 +62,87 @@ async function createIncident(
 }
 
 function acknowledge(incidentId: string, token?: string) {
-  const req = request(app)
-    .post(`/api/v1/incidents/${incidentId}/acknowledge`);
+  const req = request(app).post(`/api/v1/incidents/${incidentId}/acknowledge`);
 
-  return token === undefined
-    ? req.send({})
-    : req.send({ token });
+  return token === undefined ? req.send({}) : req.send({ token });
+}
+
+function openAckConfirmation(incidentId: string, token?: string) {
+  // Query parameters let us test the confirmation route without changing
+  // the existing POST acknowledgement helper.
+  const req = request(app).get(
+    `/api/v1/incidents/${incidentId}/acknowledge/confirm`,
+  );
+
+  return token === undefined ? req : req.query({ token });
 }
 
 describe("Incident acknowledgement", () => {
+  it("displays a confirmation page for a valid token without acknowledging", async () => {
+    const incident = await createIncident();
+    const token = createAckToken(incident.id, userId);
+
+    const response = await openAckConfirmation(incident.id, token);
+
+    expect(response.status).toBe(200);
+    expect(response.text).toContain("Acknowledge incident?");
+    expect(response.text).toContain("Acknowledge incident");
+    expect(response.headers["cache-control"]).toBe("no-store");
+    expect(response.headers["referrer-policy"]).toBe("no-referrer");
+
+    // Opening a link must not mutate state. Link scanners exist, because
+    // apparently even clicking a link can no longer be trusted to be human.
+    const unchanged = await prisma.incident.findUniqueOrThrow({
+      where: { id: incident.id },
+    });
+
+    expect(unchanged.status).toBe("FIRING");
+    expect(unchanged.nextActionAt).not.toBeNull();
+
+    const eventCount = await prisma.incidentEvent.count({
+      where: {
+        incidentId: incident.id,
+        type: "INCIDENT_ACKNOWLEDGED",
+      },
+    });
+
+    expect(eventCount).toBe(0);
+  });
+
+  it("rejects a confirmation page request without a token", async () => {
+    const incident = await createIncident();
+
+    const response = await openAckConfirmation(incident.id);
+
+    expect(response.status).toBe(400);
+  });
+
+  it("rejects an invalid confirmation token", async () => {
+    const incident = await createIncident();
+
+    const response = await openAckConfirmation(incident.id, "invalid.token");
+
+    expect(response.status).toBe(401);
+  });
+
+  it("rejects an expired confirmation token", async () => {
+    const incident = await createIncident();
+    const token = expiredAckToken(incident.id, userId);
+
+    const response = await openAckConfirmation(incident.id, token);
+
+    expect(response.status).toBe(401);
+  });
+
+  it("rejects a confirmation token issued for another incident", async () => {
+    const incident = await createIncident();
+    const token = createAckToken("another-incident-id", userId);
+
+    const response = await openAckConfirmation(incident.id, token);
+
+    expect(response.status).toBe(401);
+  });
+
   beforeAll(async () => {
     const databaseUrl = process.env.DATABASE_URL;
 
@@ -229,10 +292,7 @@ describe("Incident acknowledgement", () => {
 
   it("rejects a token referring to a nonexistent user", async () => {
     const incident = await createIncident();
-    const token = createAckToken(
-      incident.id,
-      "nonexistent-test-user",
-    );
+    const token = createAckToken(incident.id, "nonexistent-test-user");
 
     const response = await acknowledge(incident.id, token);
 

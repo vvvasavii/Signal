@@ -1,4 +1,3 @@
-
 import express from "express";
 import alertsRouter from "./routes/alerts.js";
 import incidentsRouter from "./routes/incidents.js";
